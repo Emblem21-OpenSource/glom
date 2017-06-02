@@ -1,5 +1,5 @@
-var async = require("async");
-var Snapshot = require("./snapshot");
+var async = require('async');
+var Snapshot = require('./snapshot');
 
 var COMMENTS_REGEX = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
 var ARGUMENT_NAMES_REGEX = /(?:^|,)\s*([^\s,=]+)/g;
@@ -18,20 +18,21 @@ function populateParameters(actionName, action, glom) {
     // Analyze the function string and extract the parameter names (Works with ES6 as well)
     parameterCache[actionName] = [];
 
-    var fnStr = func.toString().replace(COMMENTS_REGEX, "");
-    var argsList = fnStr.slice(fnStr.indexOf("(") + 1, fnStr.indexOf(")"));
+    var fnStr = action.toString().replace(COMMENTS_REGEX, '');
+    var argsList = fnStr.slice(fnStr.indexOf('(') + 1, fnStr.indexOf(')'));
     var validArgs = argsList.match(ARGUMENT_NAMES_REGEX);
 
     if( validArgs !== null) {
       for ( var i = 0; i < validArgs.length; i++  ) {
-        parameterCache[actionName].push( validArgs[i].replace(SPACE_AND_COMMAS_REGEX, ""));
+        parameterCache[actionName].push( validArgs[i].replace(SPACE_AND_COMMAS_REGEX, ''));
       }
     }
   }
 
   // Populate the result based on the intersection of the parameters and the glom
   var result = [];
-  for (i = 0, len = parameterCache[actionName].length; i < len; i++) {
+  var len = parameterCache[actionName].length;
+  for (i = 0; i < len; i++) {
     result.push(glom[parameterCache[actionName][i]]);
   }
 
@@ -148,3 +149,5 @@ function Glom(glom, chain, done, error) {
     });
   };
 }
+
+module.exports = Glom;
