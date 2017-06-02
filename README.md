@@ -7,41 +7,41 @@ Tranformation chain utilizing an accumulating mixin (called a glom) input parame
 ```javascript
 var Glom = require('glom');
 
-function incrementData (glom, snapshots, done, error) {
+function incrementData (value, done, error) {
     done({
-        data: glom.data + 1
+        value: value + 1
     });
 
 }
 
-function setDataSnapshot (glom, snapshots, done, error) {
-    snapshots.set('data', glom.data);
+function setDataSnapshot (value, done, error, snapshots) {
+    snapshots.set('value', value);
     done();
 }
 
-function doubleData (glom, snapshots, done, error) {
-    if (glom.data > 5) {
+function doubleData (value, done, error) {
+    if (value > 5) {
         error('Data is too big.');
     } else {
         done({
-            data: glom.data * 2
+            value: value * 2
         });
     }
 }
 
-function printData (glom, snapshots, done, error) {
-    console.log(glom.data);
+function printData (value, done, error) {
+    console.log(value);
     done();
 }
 
-function revertToSnapshot (glom, snapshots, done, error) {
+function revertToSnapshot (messages, done, snapshots) {
     done({
-        data: snapshots.get('data')
+        value: snapshots.get('value')
     });
 }
 
 Glom({
-    data: 3
+    value: 3
 }, [
     incrementData,
     getDataSnapshot,
@@ -53,5 +53,5 @@ Glom({
     }
     console.log('Glom complete with final transformation:');
     console.dir(glom);
-})
+});
 ```

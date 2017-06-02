@@ -1,3 +1,3 @@
-var Glom = require('./src/glom');
+var Glom = require("./src/glom");
 
 module.exports = Glom;

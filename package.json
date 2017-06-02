@@ -18,5 +18,9 @@
   "homepage": "https://github.com/Emblem21-OpenSource/glom#readme",
   "dependencies": {
     "async": "^2.4.1"
+  },
+  "devDependencies": {
+    "eslint": "^3.19.0",
+    "eslint-plugin-react": "^7.0.1"
   }
 }
