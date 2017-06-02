@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/Emblem21-OpenSource/glom/issues"
   },
-  "homepage": "https://github.com/Emblem21-OpenSource/glom#readme"
+  "homepage": "https://github.com/Emblem21-OpenSource/glom#readme",
+  "dependencies": {
+    "async": "^2.4.1"
+  }
 }
