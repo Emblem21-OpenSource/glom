@@ -1,0 +1,19 @@
+{
+  "name": "glom",
+  "version": "0.0.1",
+  "description": "Modanic chain utilizing an accumulating mixin input parameter.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Emblem21-OpenSource/glom.git"
+  },
+  "author": "Patrick Ryan <patrick.ryan@codeotter.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Emblem21-OpenSource/glom/issues"
+  },
+  "homepage": "https://github.com/Emblem21-OpenSource/glom#readme"
+}
