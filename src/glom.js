@@ -13,9 +13,11 @@ var defaultGlomOptions = {
 };
 
 /**
- * [getParameters description]
- * @param  {[type]} actionName [description]
+ * [populateParameters description]
+ * @param  {[type]} signature  [description]
+ * @param  {[type]} chainIndex [description]
  * @param  {[type]} action     [description]
+ * @param  {[type]} glom       [description]
  * @return {[type]}            [description]
  */
 function populateParameters(signature, chainIndex, action, glom) {
@@ -52,9 +54,9 @@ function populateParameters(signature, chainIndex, action, glom) {
 }
 
 /**
- * Creates the initiation action
- * @param  {Object}   input [description]
- * @param  {Function} next  [description]
+ * [createInitialAction description]
+ * @param  {[type]} input [description]
+ * @return {[type]}       [description]
  */
 function createInitialAction(input) {
   return function initialAction(next) {
@@ -75,6 +77,7 @@ function defaultError(e) {
  * [log description]
  * @param  {[type]} category [description]
  * @param  {[type]} message  [description]
+ * @param  {[type]} debug    [description]
  * @return {[type]}          [description]
  */
 function log(category, message, debug) {
@@ -84,11 +87,14 @@ function log(category, message, debug) {
 }
 
 /**
- * Assembles an action
- * @param  {Function} action   [description]es
- * @param  {Snapshot} snapshot [description]
- * @param  {Array}    errors   [description]
- * @return {Function}          [description]
+ * [assembleAction description]
+ * @param  {[type]} action     [description]
+ * @param  {[type]} chainIndex [description]
+ * @param  {[type]} errors     [description]
+ * @param  {[type]} options    [description]
+ * @param  {[type]} signature  [description]
+ * @param  {[type]} context    [description]
+ * @return {[type]}            [description]
  */
 function assembleAction(action, chainIndex, errors, options, signature, context) {
   var actionName = action.prototype.constructor.name;
@@ -139,11 +145,10 @@ function assembleAction(action, chainIndex, errors, options, signature, context)
 }
 
 /**
- * Glom
- * @param {Object}   glom [description]
- * @param {Array}    chain [description]
- * @param {Function} done  [description]
- * @param {Function} error  [description]
+ * [Glom description]
+ * @param {[type]} chain                 [description]
+ * @param {[type]} options               [description]
+ * @param {[type]} startingErrorMessages [description]
  */
 function Glom(chain, options, startingErrorMessages) {
   var signature = '';
@@ -167,8 +172,10 @@ function Glom(chain, options, startingErrorMessages) {
 
   /**
    * [run description]
-   * @param  {Function} done [description]
-   * @return {[type]}        [description]
+   * @param  {[type]}   glom  [description]
+   * @param  {Function} done  [description]
+   * @param  {[type]}   error [description]
+   * @return {[type]}         [description]
    */
   this.run = function run(glom, done, error) {
 
@@ -232,8 +239,9 @@ function Glom(chain, options, startingErrorMessages) {
 
 /**
  * [parallel description]
- * @param  {[type]} chain [description]
- * @return {[type]}       [description]
+ * @param  {[type]} chain   [description]
+ * @param  {[type]} options [description]
+ * @return {[type]}         [description]
  */
 Glom.parallel = function assembleParallel(chain, options) {
   if (options === undefined || options === null || Object.prototype.toString.call(options) !== '[object Object]') {

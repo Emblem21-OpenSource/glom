@@ -40,16 +40,6 @@ new Glom([
   assert.equal(glom.bob, 5);
 }, error);
 
-
-// Passthru test
-new Glom([
-  passthru
-]).run({
-  bob: 5
-}, function done(glom) {
-  assert.equal(glom.bob, 5);
-}, error);
-
 // Simple mutation test
 new Glom([
   add
@@ -144,6 +134,26 @@ new Glom([
   bob: 5
 }, function done(glom) {
   assert.equal(glom.bob, 20);
+}, function error() {
+  assert.fail('This should not have been called');
+});
+
+// Sidechain failure isn't triggered
+new Glom([
+  add,
+  Glom.parallel([
+    add,
+    add
+  ], {
+    debug: true
+  }),
+  add
+], {
+  debug: true
+}).run({
+  bob: 5
+}, function done(glom) {
+  assert.equal(glom.bob, 25);
 }, function error() {
   assert.fail('This should not have been called');
 });
