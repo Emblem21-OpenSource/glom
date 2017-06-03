@@ -18,6 +18,10 @@ function Snapshot () {
    * @param {String} key   [description]
    */
   this.get = function set (key) {
+    if(state[key] === undefined) {
+      return undefined;
+    }
+
     try {
       return JSON.parse(state[key]);
     } catch (e) {

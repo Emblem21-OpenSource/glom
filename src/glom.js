@@ -73,7 +73,7 @@ function defaultError(e) {
  * @param {Function} done  [description]
  * @param {Function} error  [description]
  */
-function Glom(glom, chain, options) {
+function Glom(glom, chain, options, startingErrorMessages) {
   var self = this;
   var signature = '';
 
@@ -160,7 +160,7 @@ function Glom(glom, chain, options) {
   this.run = function run(done, error) {
     this.log('Glom', 'Assembling...');
     var actions = [createInitialAction(glom)];
-    var errorMessages = [];
+    var errorMessages = startingErrorMessages || [];
     var errorHandlers = [];
     this.snapshot = new Snapshot();
     var self = this;
@@ -174,8 +174,8 @@ function Glom(glom, chain, options) {
         if (chain[index] instanceof Array) {
           self.log('Glom', index + '.) Assembling Glom...');
           // Assemble the action with a Glom error chain
-          actions.push(assembleAction(chain[index].slice(0, 1), index, errorMessages));
-          errorHandlers.push(new Glom(glom, chain[index].slice(1), error, error));
+          actions.push(assembleAction(chain[index][0], index, errorMessages));
+          errorHandlers.push(new Glom(glom, chain[index].slice(1), options, errorMessages));
         } else {
           self.log('Glom', index + '.) Assembling Action: ' + chain[index].prototype.constructor.name);
           // Assemble a normal action
@@ -189,18 +189,18 @@ function Glom(glom, chain, options) {
     async.waterfall(actions, function glomComplete(errorObject) {
       self.log('Glom', 'Complete');
       if (errorObject) {
-        self.log('Glom::Error', errorObject);
+        self.log('Glom::error', errorObject);
         var errorHandler = errorHandlers[errorObject.chainIndex];
         if (errorHandler instanceof Glom) {
           self.log('Glom', 'Error Callback as Glom');
           errorHandler.run(error, error);
         } else {
           self.log('Glom', 'Error Callback');
-          errorHandler.call(this, errorMessages, glom);
+          errorHandler.call(self, glom, errorMessages);
         }
       } else {
         self.log('Glom', 'Exit');
-        done(glom);
+        done.call(self, glom, errorMessages);
       }
     });
   };

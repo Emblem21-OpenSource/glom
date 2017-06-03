@@ -1,6 +1,8 @@
 var Glom = require('../src/glom.js');
 var assert = require('assert');
 
+// Actions
+
 function passthru(next) {
   next();
 }
@@ -26,6 +28,8 @@ function fail(next, error) {
 function error() {
   assert.fail('This should not have been called');
 }
+
+// Gloms
 
 // Passthru test
 new Glom({
@@ -62,7 +66,7 @@ new Glom({
   failCheck
 ]).run(function done() {
   assert.fail('This should not have been called');
-}, function error(messages) {
+}, function error(glom, messages) {
   assert.equal(messages.length, 1);
   assert.equal(messages[0], 'This failed');
 });
@@ -75,12 +79,13 @@ new Glom({
   fail
 ]).run(function done() {
   assert.fail('This should not have been called');
-}, function error(messages) {
+}, function error(glom, messages) {
+  assert.equal(glom.bob, 9);
   assert.equal(messages.length, 1);
   assert.equal(messages[0], 'This failed');
 });
 
-// Conditional failure
+// Side-chain failure
 new Glom({
   bob: 5
 }, [
@@ -88,8 +93,8 @@ new Glom({
   [fail, add]
 ]).run(function done() {
   assert.fail('This should not have been called');
-}, function error(messages, glom) {
-  console.log(glom);
+}, function error(glom, messages) {
+  assert.equal(glom.bob, 13);
   assert.equal(messages.length, 1);
   assert.equal(messages[0], 'This failed');
 });
