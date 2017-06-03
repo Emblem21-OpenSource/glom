@@ -9,7 +9,7 @@ function passthru(next) {
 
 function add(bob, next) {
   next({
-    bob: bob + 4
+    bob: bob + 5
   });
 }
 
@@ -46,7 +46,7 @@ new Glom({
 }, [
   add
 ]).run(function done(glom) {
-  assert.equal(glom.bob, 9);
+  assert.equal(glom.bob, 10);
 }, error);
 
 // Multi-step mutation
@@ -56,7 +56,7 @@ new Glom({
   add,
   add
 ]).run(function done(glom) {
-  assert.equal(glom.bob, 13);
+  assert.equal(glom.bob, 15);
 }, error);
 
 // Simple failure
@@ -80,12 +80,12 @@ new Glom({
 ]).run(function done() {
   assert.fail('This should not have been called');
 }, function error(glom, messages) {
-  assert.equal(glom.bob, 9);
+  assert.equal(glom.bob, 10);
   assert.equal(messages.length, 1);
   assert.equal(messages[0], 'This failed');
 });
 
-// Side-chain failure
+// Sidechain failure
 new Glom({
   bob: 5
 }, [
@@ -94,7 +94,25 @@ new Glom({
 ]).run(function done() {
   assert.fail('This should not have been called');
 }, function error(glom, messages) {
-  assert.equal(glom.bob, 13);
+  assert.equal(glom.bob, 15);
   assert.equal(messages.length, 1);
   assert.equal(messages[0], 'This failed');
+});
+
+
+// Recursive cidechain failure
+new Glom({
+  bob: 5
+}, [
+  add,
+  [fail, add, add, [fail, 
+    add, add], 
+    add]
+]).run(function done() {
+  assert.fail('This should not have been called');
+}, function error(glom, messages) {
+  assert.equal(glom.bob, 30);
+  assert.equal(messages.length, 2);
+  assert.equal(messages[0], 'This failed');
+  assert.equal(messages[1], 'This failed');
 });
