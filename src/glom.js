@@ -7,6 +7,11 @@ var SPACE_AND_COMMAS_REGEX = /[\s,]/g;
 
 var parameterCache = {};
 
+var defaultGlomOptions = {
+  debug: false,
+  parallel: false
+};
+
 /**
  * [getParameters description]
  * @param  {[type]} actionName [description]
@@ -67,89 +72,97 @@ function defaultError(e) {
 }
 
 /**
+ * [log description]
+ * @param  {[type]} category [description]
+ * @param  {[type]} message  [description]
+ * @return {[type]}          [description]
+ */
+function log(category, message, debug) {
+  if(debug === true) {
+    console.log('\x1b[0;37m[\x1b[32m' + new Date().toISOString() + '\x1b[0;37m] \x1b[1m\x1b[33m' + category + ' \x1b[0;37m:', message, '\x1b[0m');
+  }
+}
+
+/**
+ * Assembles an action
+ * @param  {Function} action   [description]es
+ * @param  {Snapshot} snapshot [description]
+ * @param  {Array}    errors   [description]
+ * @return {Function}          [description]
+ */
+function assembleAction(action, chainIndex, errors, options, signature, context) {
+  var actionName = action.prototype.constructor.name;
+  /**
+   * Handles an action
+   * @param  {Object}   glom [description]
+   * @param  {Function} next [description]
+   */
+  return function actionHandler(glom, next) {
+    var parameters = populateParameters(signature, chainIndex, action, glom);
+    log(actionName + '::parameters', parameters, options.debug);
+
+    parameters.push(function actionDone(newGlom) {
+      log(actionName, 'Complete', options.debug);
+      if ((!!newGlom) && (newGlom.constructor === Object)) {
+        // newGlom is an object literal
+        log(actionName + '::fusingStart', newGlom, options.debug);
+        // Apply new glom changes to the glom object
+        for (var i in newGlom) {
+          if (newGlom.hasOwnProperty(i)) {
+            glom[i] = newGlom[i];
+          }
+        }
+        log(actionName + '::fusingComplete', glom, options.debug);
+        // Move to the next action
+        log(actionName, 'Exit', options.debug);
+        next(null, glom);
+      } else {
+        // No glom was returned
+        log(actionName, 'Exit', options.debug);
+        next(null, glom);
+      }
+    });
+
+    parameters.push(function actionError(errorMessage) {
+      // An non-critical warning has occured
+      log(actionName + '::error', errorMessage, options.debug);
+      errors.push(errorMessage);
+      next({
+        chainIndex: chainIndex,
+        messages: errors
+      });
+    });
+
+    log(actionName, 'Call', options.debug);
+    action.apply(context, parameters);
+  };
+}
+
+/**
  * Glom
  * @param {Object}   glom [description]
  * @param {Array}    chain [description]
  * @param {Function} done  [description]
  * @param {Function} error  [description]
  */
-function Glom(glom, chain, options, startingErrorMessages) {
-  var self = this;
+function Glom(chain, options, startingErrorMessages) {
   var signature = '';
+  var asyncMethod;
 
   for(var i = 0, len = chain.length; i < len; i++) {
     signature += chain[i].toString();
   }
 
-  if (options === undefined) {
-    options = {
-      debug: false
-    };
+  if (options === undefined || options === null || Object.prototype.toString.call(options) !== '[object Object]') {
+    options = defaultGlomOptions;
   }
 
-  /**
-   * [log description]
-   * @param  {[type]} category [description]
-   * @param  {[type]} message  [description]
-   * @return {[type]}          [description]
-   */
-  this.log = function log(category, message) {
-    if(options.debug === true) {
-      console.log('\x1b[0;37m[\x1b[32m' + new Date().toISOString() + '\x1b[0;37m] \x1b[1m\x1b[33m' + category + ' \x1b[0;37m:', message, '\x1b[0m');
-    }
-  };
+  if (!(chain instanceof Array)) {
+    chain = [];
+  }
 
-  /**
-   * Assembles an action
-   * @param  {Function} action   [description]es
-   * @param  {Snapshot} snapshot [description]
-   * @param  {Array}    errors   [description]
-   * @return {Function}          [description]
-   */
-  function assembleAction(action, chainIndex, errors) {
-    var actionName = action.prototype.constructor.name;
-    /**
-     * Handles an action
-     * @param  {Object}   glom [description]
-     * @param  {Function} next [description]
-     */
-    return function actionHandler(glom, next) {
-      var parameters = populateParameters(signature, chainIndex, action, glom);
-      self.log(actionName + '::parameters', parameters);
-      parameters.push(function actionDone(newGlom) {
-        self.log(actionName, 'Complete');
-        if ((!!newGlom) && (newGlom.constructor === Object)) {
-          // newGlom is an object literal
-          self.log(actionName + '::fusingStart', newGlom);
-          // Apply new glom changes to the glom object
-          for (var i in newGlom) {
-            if (newGlom.hasOwnProperty(i)) {
-              glom[i] = newGlom[i];
-            }
-          }
-          self.log(actionName + '::fusingComplete', glom);
-          // Move to the next action
-          self.log(actionName, 'Exit');
-          next(null, glom);
-        } else {
-          // No glom was returned
-          self.log(actionName, 'Exit');
-          next(null, glom);
-        }
-      });
-      parameters.push(function actionError(errorMessage) {
-        // An non-critical warning has occured
-        self.log(actionName + '::error', errorMessage);
-        errors.push(errorMessage);
-        next({
-          chainIndex: chainIndex,
-          messages: errors
-        });
-      });
-
-      self.log(actionName, 'Call');
-      action.apply(self, parameters);
-    };
+  if (!(startingErrorMessages instanceof Array)) {
+    startingErrorMessages = [];
   }
 
   /**
@@ -157,10 +170,15 @@ function Glom(glom, chain, options, startingErrorMessages) {
    * @param  {Function} done [description]
    * @return {[type]}        [description]
    */
-  this.run = function run(done, error) {
-    this.log('Glom', 'Assembling...');
+  this.run = function run(glom, done, error) {
+
+    if (glom === undefined || glom === null ||  Object.prototype.toString.call(glom) !== '[object Object]') {
+      glom = {};
+    }
+
+    log('Glom', 'Assembling...', options.debug);
     var actions = [createInitialAction(glom)];
-    var errorMessages = startingErrorMessages || [];
+    var errorMessages = startingErrorMessages;
     var errorHandlers = [];
     this.snapshot = new Snapshot();
     var self = this;
@@ -172,38 +190,66 @@ function Glom(glom, chain, options, startingErrorMessages) {
     for (var i = 0, len = chain.length; i < len; i++) {
       (function lexicalWrapper(index) {
         if (chain[index] instanceof Array) {
-          self.log('Glom', index + '.) Assembling Glom...');
+          log('Glom', index + '.) Assembling Glom...', options.debug);
           // Assemble the action with a Glom error chain
-          actions.push(assembleAction(chain[index][0], index, errorMessages));
-          errorHandlers.push(new Glom(glom, chain[index].slice(1), options, errorMessages));
+          actions.push(assembleAction(chain[index][0], index, errorMessages, options, signature, this));
+          errorHandlers.push(new Glom(chain[index].slice(1), options, errorMessages));
         } else {
-          self.log('Glom', index + '.) Assembling Action: ' + chain[index].prototype.constructor.name);
+          log('Glom', index + '.) Assembling Action: ' + chain[index].prototype.constructor.name, options.debug);
           // Assemble a normal action
-          actions.push(assembleAction(chain[index], index, errorMessages));
+          actions.push(assembleAction(chain[index], index, errorMessages, options, signature, this));
           errorHandlers.push(error);
         }
       }(i));
     }
 
-    this.log('Glom', 'Start');
-    async.waterfall(actions, function glomComplete(errorObject) {
-      self.log('Glom', 'Complete');
+    if(options.parallel === true) {
+      asyncMethod = async.parallel;
+    } else {
+      asyncMethod = async.waterfall;
+    }
+
+    log('Glom', 'Start', options.debug);
+    asyncMethod(actions, function glomComplete(errorObject) {
+      log('Glom', 'Complete', options.debug);
       if (errorObject) {
-        self.log('Glom::error', errorObject);
+        log('Glom::error', errorObject, options.debug);
         var errorHandler = errorHandlers[errorObject.chainIndex];
         if (errorHandler instanceof Glom) {
-          self.log('Glom', 'Error Callback as Glom');
-          errorHandler.run(error, error);
+          log('Glom', 'Error Callback as Glom', options.debug);
+          errorHandler.run(glom, error, error);
         } else {
-          self.log('Glom', 'Error Callback');
+          log('Glom', 'Error Callback', options.debug);
           errorHandler.call(self, glom, errorMessages);
         }
       } else {
-        self.log('Glom', 'Exit');
+        log('Glom', 'Exit', options.debug);
         done.call(self, glom, errorMessages);
       }
     });
   };
 }
+
+/**
+ * [parallel description]
+ * @param  {[type]} chain [description]
+ * @return {[type]}       [description]
+ */
+Glom.parallel = function assembleParallel(chain, options) {
+  if (options === undefined || options === null || Object.prototype.toString.call(options) !== '[object Object]') {
+    options = defaultGlomOptions;
+  }
+
+  return function processParallel(glom, next) {
+    new Glom(chain, {
+      debug: options.debug,
+      parallel: true
+    }).run(glom, function parallelDone() {
+      next(null, glom);
+    }, function parallelError(glom, messages) {
+      next(messages, glom);
+    });
+  };
+};
 
 module.exports = Glom;

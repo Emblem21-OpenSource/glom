@@ -32,39 +32,49 @@ function error() {
 // Gloms
 
 // Passthru test
-new Glom({
-  bob: 5
-}, [
+new Glom([
   passthru
-]).run(function done(glom) {
+]).run({
+  bob: 5
+}, function done(glom) {
+  assert.equal(glom.bob, 5);
+}, error);
+
+
+// Passthru test
+new Glom([
+  passthru
+]).run({
+  bob: 5
+}, function done(glom) {
   assert.equal(glom.bob, 5);
 }, error);
 
 // Simple mutation test
-new Glom({
-  bob: 5
-}, [
+new Glom([
   add
-]).run(function done(glom) {
+]).run({
+  bob: 5
+}, function done(glom) {
   assert.equal(glom.bob, 10);
 }, error);
 
 // Multi-step mutation
-new Glom({
-  bob: 5
-}, [
+new Glom([
   add,
   add
-]).run(function done(glom) {
+]).run({
+  bob: 5
+}, function done(glom) {
   assert.equal(glom.bob, 15);
 }, error);
 
 // Simple failure
-new Glom({
-  bob: 5
-}, [
+new Glom([
   failCheck
-]).run(function done() {
+]).run({
+  bob: 5
+}, function done() {
   assert.fail('This should not have been called');
 }, function error(glom, messages) {
   assert.equal(messages.length, 1);
@@ -72,12 +82,12 @@ new Glom({
 });
 
 // Multi-step failure
-new Glom({
-  bob: 5
-}, [
+new Glom([
   add,
   fail
-]).run(function done() {
+]).run({
+  bob: 5
+}, function done() {
   assert.fail('This should not have been called');
 }, function error(glom, messages) {
   assert.equal(glom.bob, 10);
@@ -86,12 +96,12 @@ new Glom({
 });
 
 // Sidechain failure
-new Glom({
-  bob: 5
-}, [
+new Glom([
   add,
   [fail, add]
-]).run(function done() {
+]).run({
+  bob: 5
+}, function done() {
   assert.fail('This should not have been called');
 }, function error(glom, messages) {
   assert.equal(glom.bob, 15);
@@ -99,16 +109,20 @@ new Glom({
   assert.equal(messages[0], 'This failed');
 });
 
-
-// Recursive cidechain failure
-new Glom({
-  bob: 5
-}, [
+// Recursive sidechain failure
+new Glom([
   add,
-  [fail, add, add, [fail, 
-    add, add], 
+  [fail, 
+    add, 
+    add, 
+    [fail, 
+      add, 
+      add
+    ], 
     add]
-]).run(function done() {
+]).run({
+  bob: 5
+}, function done() {
   assert.fail('This should not have been called');
 }, function error(glom, messages) {
   assert.equal(glom.bob, 30);
@@ -116,3 +130,21 @@ new Glom({
   assert.equal(messages[0], 'This failed');
   assert.equal(messages[1], 'This failed');
 });
+
+// Sidechain failure isn't triggered
+new Glom([
+  add,
+  [add,
+    add,
+    add,
+    add
+  ],
+  add
+]).run({
+  bob: 5
+}, function done(glom) {
+  assert.equal(glom.bob, 20);
+}, function error() {
+  assert.fail('This should not have been called');
+});
+
