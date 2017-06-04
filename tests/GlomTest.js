@@ -144,13 +144,9 @@ new Glom([
   Glom.parallel([
     add,
     add
-  ], {
-    debug: true
-  }),
+  ]),
   add
-], {
-  debug: true
-}).run({
+]).run({
   bob: 5
 }, function done(glom) {
   assert.equal(glom.bob, 25);

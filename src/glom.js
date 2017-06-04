@@ -104,7 +104,14 @@ function assembleAction(action, chainIndex, errors, options, signature, context)
    * @param  {Function} next [description]
    */
   return function actionHandler(glom, next) {
-    var parameters = populateParameters(signature, chainIndex, action, glom);
+    var parameters;
+
+    if(actionName === 'processParallelGlom') {
+      parameters = [glom];
+    } else {
+      parameters = populateParameters(signature, chainIndex, action, glom);
+    }
+
     log(actionName + '::parameters', parameters, options.debug);
 
     parameters.push(function actionDone(newGlom) {
@@ -211,7 +218,7 @@ function Glom(chain, options, startingErrorMessages) {
     }
 
     if(options.parallel === true) {
-      asyncMethod = async.parallel;
+      asyncMethod = parallellWaterfall;
     } else {
       asyncMethod = async.waterfall;
     }
@@ -237,6 +244,32 @@ function Glom(chain, options, startingErrorMessages) {
   };
 }
 
+function parallellWaterfall(actions, done) {
+  var completedActions = 0;
+  var totalActions = actions.length;
+  var actionCount = actions.length - 1;
+  var debug = false;
+
+  // Kickstart the initial action of the parallel chain
+  actions[0](function firstParallelAction(err, glom) {
+    for (var i = 1; i < totalActions; i++) {
+      log('Glom::parallel::start', '(' + i + '/' + actionCount + ')', debug);
+      (function parallelLexicalWrapper(index) {
+        setTimeout(function nextTickWrapper() {
+          actions[index](glom, function nextParallelAction() {
+            completedActions += 1;
+            log('Glom::parallel::done', '(' + completedActions + '/' + actionCount + ')', debug);
+            if(completedActions === totalActions) {
+              log('Glom::parallel', 'Exit');
+              done(glom);
+            }
+          });
+        });
+      }(i));
+    }
+  });
+}
+
 /**
  * [parallel description]
  * @param  {[type]} chain   [description]
@@ -248,11 +281,13 @@ Glom.parallel = function assembleParallel(chain, options) {
     options = defaultGlomOptions;
   }
 
-  return function processParallel(glom, next) {
+  log('Glom::parallel', 'Assembling...', options.debug);
+  return function processParallelGlom(glom, next) {
+    log('Glom::parallel::processing', glom, options.debug);
     new Glom(chain, {
       debug: options.debug,
       parallel: true
-    }).run(glom, function parallelDone() {
+    }).run(glom, function parallelDone(glom) {
       next(null, glom);
     }, function parallelError(glom, messages) {
       next(messages, glom);
