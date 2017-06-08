@@ -6,7 +6,7 @@ Tranformation chain utilizing an accumulating mixin (called a glom) input parame
 
 If one was to describe the atomic actions required to create a new account using a chain of asynchronous functions, your Glom would look like this:
 
-```
+```javascript
 // A chain of business rules for account creation
 new Glom([
   validateUserInput,
