@@ -2,6 +2,12 @@
 
 Tranformation chain utilizing an accumulating mixin (called a glom) input parameter.
 
+## Install
+
+```
+npm install glom
+```
+
 ## Example
 
 If one was to describe the atomic actions required to create a new account using a chain of asynchronous functions, your Glom would look like this:
@@ -60,14 +66,14 @@ function revertToSnapshot (messages, next, error) {
     });
 }
 
-Glom({
-    value: 3
-}, [
+Glom([
     incrementData,
     getDataSnapshot,
     [doubleData, revertToSnapshot],
     printData
-], function glomDone (glom) {
+]).run({
+    value: 3
+}, function glomDone (glom) {
     console.log('Glom complete with final transformation:');
     console.dir(glom);
 }, console.error);

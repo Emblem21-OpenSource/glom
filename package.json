@@ -1,6 +1,6 @@
 {
   "name": "glom",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Modanic chain utilizing an accumulating mixin input parameter.",
   "main": "index.js",
   "scripts": {
