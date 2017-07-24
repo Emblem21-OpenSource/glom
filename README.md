@@ -18,7 +18,7 @@ new Glom([
   validateUserInput,
   isEmailUnique,
   createUser,
-  [createDefaultPermissions, deleteUser, createError, returnJson]  // Sidechain in case of failure
+  [createDefaultPermissions, deleteUser, createError, returnJson],  // Sidechain in case of failure
   notifyAdmin,
   registerNewUserStats,
   returnJson
